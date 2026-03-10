@@ -4,35 +4,51 @@ struct ContentView: View {
     @StateObject private var game = SudokuGame()
 
     @State private var showingCompletion = false
+    @State private var showingGameOver = false
     @State private var showingError = false
     @State private var errorMessage = ""
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 20) {
-                difficultyPicker
+            GeometryReader { geo in
+                let maxWidth = min(geo.size.width, geo.size.height * 0.85)
 
-                if game.isLoading {
-                    Spacer()
-                    ProgressView("Loading puzzle…")
-                    Spacer()
-                } else {
-                    BoardView(game: game) { row, col in
-                        game.selectCell(row: row, col: col)
+                VStack(spacing: 20) {
+                    difficultyPicker
+
+                    if game.isLoading {
+                        Spacer()
+                        ProgressView("Loading puzzle…")
+                        Spacer()
+                    } else {
+                        HStack {
+                            Spacer()
+                            Label("\(game.errorCount)/\(game.maxErrors)", systemImage: "xmark.circle")
+                                .foregroundColor(game.errorCount > 0 ? .red : .secondary)
+                                .font(.subheadline)
+                        }
+
+                        BoardView(game: game) { row, col in
+                            game.selectCell(row: row, col: col)
+                        }
+                        .padding(.horizontal, 4)
+
+                        NumberPadView(
+                            onNumber: { enterValue($0) },
+                            onErase:  { game.clearCell() },
+                            isExhausted: { game.isNumberExhausted($0) }
+                        )
+                        .disabled(game.isGameOver)
+
+                        actionButtons
                     }
-                    .padding(.horizontal, 4)
 
-                    NumberPadView(
-                        onNumber: { enterValue($0) },
-                        onErase:  { game.clearCell() }
-                    )
-
-                    actionButtons
+                    Spacer()
                 }
-
-                Spacer()
+                .padding()
+                .frame(maxWidth: maxWidth)
+                .frame(maxWidth: .infinity)
             }
-            .padding()
             .navigationTitle("Sudoku")
             .navigationBarTitleDisplayMode(.large)
             .alert("Puzzle Complete!", isPresented: $showingCompletion) {
@@ -40,6 +56,11 @@ struct ContentView: View {
                 Button("OK", role: .cancel) {}
             } message: {
                 Text("Congratulations! You solved the puzzle.")
+            }
+            .alert("Game Over", isPresented: $showingGameOver) {
+                Button("New Game") { newGame() }
+            } message: {
+                Text("You made \(game.maxErrors) mistakes. Try again!")
             }
             .alert("Error", isPresented: $showingError) {
                 Button("OK", role: .cancel) {}
@@ -59,7 +80,7 @@ struct ContentView: View {
             Text("Hard").tag("hard")
         }
         .pickerStyle(.segmented)
-        .onChange(of: game.difficulty) { _, _ in newGame() }
+        .onChange(of: game.difficulty) { _ in newGame() }
     }
 
     private var actionButtons: some View {
@@ -97,6 +118,7 @@ struct ContentView: View {
     }
 
     private func enterValue(_ value: Int) {
+        guard !game.isGameOver else { return }
         guard let row = game.selectedRow, let col = game.selectedCol else { return }
         guard !game.cells[row][col].isGiven else { return }
 
@@ -109,7 +131,11 @@ struct ContentView: View {
                     board: board, row: row, col: col, value: value
                 )
                 game.markCell(row: row, col: col, isError: !result.valid)
-                if result.complete { showingCompletion = true }
+                if game.isGameOver {
+                    showingGameOver = true
+                } else if result.complete {
+                    showingCompletion = true
+                }
             } catch {
                 // Leave the value shown; validation is best-effort
             }

@@ -21,6 +21,7 @@ struct BoardView: View {
                                     cell: game.cells[row][col],
                                     isSelected: game.isSelected(row: row, col: col),
                                     isHighlighted: game.isHighlighted(row: row, col: col),
+                                    hasSameValue: game.hasSameValue(row: row, col: col),
                                     size: cellSize
                                 )
                                 .onTapGesture { onTap(row, col) }
@@ -73,6 +74,7 @@ struct CellView: View {
     let cell: SudokuGame.Cell
     let isSelected: Bool
     let isHighlighted: Bool
+    let hasSameValue: Bool
     let size: CGFloat
 
     var body: some View {
@@ -88,7 +90,8 @@ struct CellView: View {
     }
 
     private var backgroundColor: Color {
-        if isSelected   { return Color.blue.opacity(0.35) }
+        if isSelected    { return Color.blue.opacity(0.35) }
+        if hasSameValue  { return Color.blue.opacity(0.20) }
         if isHighlighted { return Color.blue.opacity(0.10) }
         return Color(.systemBackground)
     }

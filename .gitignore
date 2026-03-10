@@ -1,0 +1,19 @@
+# Xcode user-specific
+xcuserdata/
+*.xcuserstate
+*.xcuserdatad
+*.xcworkspace/xcuserdata/
+
+# Xcode workspace
+*.xcworkspace/
+*.xcodeproj/project.xcworkspace/
+
+# Build
+build/
+DerivedData/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# OS
+.DS_Store

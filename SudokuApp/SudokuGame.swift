@@ -15,6 +15,17 @@ class SudokuGame: ObservableObject {
     @Published var isComplete: Bool = false
     @Published var isLoading: Bool = false
     @Published var difficulty: String = "medium"
+    @Published var errorCount: Int = 0
+
+    let maxErrors = 3
+
+    var isGameOver: Bool { errorCount >= maxErrors }
+
+    var selectedValue: Int? {
+        guard let row = selectedRow, let col = selectedCol else { return nil }
+        let v = cells[row][col].value
+        return v != 0 ? v : nil
+    }
 
     init() { initEmpty() }
 
@@ -29,6 +40,7 @@ class SudokuGame: ObservableObject {
 
     func loadPuzzle(board: [[Int]], solution: [[Int]]) {
         isComplete  = false
+        errorCount  = 0
         selectedRow = nil
         selectedCol = nil
         cells = (0..<9).map { row in
@@ -67,6 +79,7 @@ class SudokuGame: ObservableObject {
 
     func markCell(row: Int, col: Int, isError: Bool) {
         cells[row][col].isError = isError
+        if isError { errorCount += 1 }
     }
 
     func applyServerSolution(_ board: [[Int]]) {
@@ -90,5 +103,20 @@ class SudokuGame: ObservableObject {
 
     func isSelected(row: Int, col: Int) -> Bool {
         selectedRow == row && selectedCol == col
+    }
+
+    func isNumberExhausted(_ number: Int) -> Bool {
+        var count = 0
+        for row in cells {
+            for cell in row where cell.value == number {
+                count += 1
+            }
+        }
+        return count >= 9
+    }
+
+    func hasSameValue(row: Int, col: Int) -> Bool {
+        guard let sv = selectedValue else { return false }
+        return cells[row][col].value == sv
     }
 }
